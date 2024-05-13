@@ -45,7 +45,7 @@ def run_training_loop(params):
     logger = Logger(params['logdir'])
 
     # Set random seeds
-    seed = params['seed']
+    seed = params['seed']   
     np.random.seed(seed)
     torch.manual_seed(seed)
     ptu.init_gpu(
@@ -62,7 +62,8 @@ def run_training_loop(params):
     #############
 
     # Make the gym environment
-    env = gym.make(params['env_name'], render_mode=None)
+    # env = gym.make(params['env_name'], render_mode="human")
+    env = gym.make(params['env_name'])
     env.reset(seed=seed)
 
     # Maximum length for episodes
@@ -88,9 +89,9 @@ def run_training_loop(params):
     actor = MLPPolicySL(
         ac_dim,
         ob_dim,
-        params['n_layers'],
-        params['size'],
-        learning_rate=params['learning_rate'],
+        params['n_layers'], # 2
+        params['size'], # 64
+        learning_rate=params['learning_rate'], # 0.005
     )
 
     # replay buffer
@@ -157,7 +158,9 @@ def run_training_loop(params):
           # HINT2: use np.random.permutation to sample random indices
           # HINT3: return corresponding data points from each array (i.e., not different indices from each array)
           # for imitation learning, we only need observations and actions.  
-          ob_batch, ac_batch = TODO
+          indices = np.random.permutation(replay_buffer.obs.shape[0])[:params['train_batch_size']]
+          ob_batch, ac_batch = replay_buffer.obs[indices], replay_buffer.acs[indices]
+
 
           # use the sampled data to train an agent
           train_log = actor.update(ob_batch, ac_batch)
@@ -170,8 +173,9 @@ def run_training_loop(params):
             print('\nCollecting video rollouts eval')
             eval_video_paths = utils.sample_n_trajectories(
                 env, actor, MAX_NVIDEO, MAX_VIDEO_LEN, True)
-
             # save videos
+            # print all the details of eval_video_paths
+            
             if eval_video_paths is not None:
                 logger.log_paths_as_videos(
                     eval_video_paths, itr,
